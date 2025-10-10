@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Record {{ record.bib }} - Classification Vote{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1>Record {{ record.bib }}</h1>
+        <small class="text-muted">Record {{ current_index + 1 }} of {{ total_records }}</small>
+        <div class="mt-1">
+            <a href="https://search.library.yale.edu/catalog/{{ record.bib }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-external-link-alt"></i> View in Quicksearch
+            </a>
+            <a href="https://datasync.library.yale.edu/data/oldbibid/{{ record.bib }}" target="_blank" class="btn btn-outline-secondary btn-sm ms-2">
+                <i class="fas fa-external-link-alt"></i> View in Data Synchronizer
+            </a>
+        </div>
+    </div>
+    <div>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">← Back to Records</a>
+    </div>
+</div>
+
+<!-- Progress meter -->
+<div class="progress-container mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <small class="text-muted">Progress through records</small>
+        <small class="text-muted">{{ ((current_index + 1) / total_records * 100) | round(1) }}% complete</small>
+    </div>
+    <div class="progress" style="height: 8px;">
+        <div class="progress-bar bg-primary"
+             role="progressbar"
+             style="width: {{ ((current_index + 1) / total_records * 100) }}%;"
+             aria-valuenow="{{ current_index + 1 }}"
+             aria-valuemin="0"
+             aria-valuemax="{{ total_records }}">
+        </div>
+    </div>
+    <div class="d-flex justify-content-between mt-1">
+        <small class="text-muted">First</small>
+        <small class="text-muted">Last</small>
+    </div>
+</div>
+
+<!-- Navigation buttons -->
+<div class="navigation-buttons">
+    <div class="d-flex justify-content-between">
+        <div>
+            {% if prev_record %}
+                <a href="{{ url_for('record_detail', bib_id=prev_record.bib) }}" class="btn btn-outline-primary">
+                    ← Previous Record ({{ prev_record.bib }})
+                </a>
+            {% else %}
+                <button class="btn btn-outline-secondary" disabled>← Previous Record</button>
+            {% endif %}
+        </div>
+        <div>
+            {% if next_record %}
+                <a href="{{ url_for('record_detail', bib_id=next_record.bib) }}" class="btn btn-outline-primary">
+                    Next Record ({{ next_record.bib }}) →
+                </a>
+            {% else %}
+                <button class="btn btn-outline-secondary" disabled>Next Record →</button>
+            {% endif %}
+        </div>
+    </div>
+    <div class="nav-hint text-center">
+        <small>Use ← → arrow keys to navigate between records</small>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Title</h5>
+        <p class="card-text">{{ record.title }}</p>
+    </div>
+</div>
+
+<h2>Notes Classification & Review</h2>
+<p class="text-muted mb-4">
+    <strong>Classification Types:</strong><br>
+    <span class="badge bg-info">W</span> Work - Content related to the work itself<br>
+    <span class="badge bg-warning">O</span> Object - Physical description of the manuscript<br>
+    <span class="badge bg-success">A</span> Administrative - Cataloging or processing information<br>
+    <span class="badge bg-secondary">OW</span> Object/Work - Combined physical and content description<br>
+    <span class="badge bg-dark">AW</span> Administrative/Work - Combined administrative and content information<br>
+    <span class="badge bg-primary">AO</span> Administrative/Object - Combined administrative and physical information<br>
+    <span class="badge bg-danger">?</span> Unknown - Classification unclear or uncertain
+</p>
+
+{% for note in record.notes %}
+<div class="card mb-3 note-card" data-note-index="{{ loop.index0 }}">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="card-subtitle mb-2">Note {{ loop.index }}</h6>
+                <p class="card-text">{{ note.text }}</p>
+                <small class="text-muted">Current type: <span class="current-type">{{ note.type or 'unclassified' }}</span></small>
+            </div>
+            <div class="col-md-3">
+                <div class="classification-buttons">
+                    <h6 class="mb-2">Classification</h6>
+                    <div class="btn-group-vertical w-100" role="group">
+                        <button type="button" class="btn btn-outline-info btn-sm vote-btn" data-classification="w">Work (W)</button>
+                        <button type="button" class="btn btn-outline-warning btn-sm vote-btn" data-classification="o">Object (O)</button>
+                        <button type="button" class="btn btn-outline-success btn-sm vote-btn" data-classification="a">Administrative (A)</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm vote-btn" data-classification="ow">Object/Work (OW)</button>
+                        <button type="button" class="btn btn-outline-dark btn-sm vote-btn" data-classification="aw">Administrative/Work (AW)</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm vote-btn" data-classification="ao">Administrative/Object (AO)</button>
+                        <button type="button" class="btn btn-outline-danger btn-sm vote-btn" data-classification="?">Unknown (?)</button>
+                    </div>
+                    <div class="vote-status mt-2" style="display: none;">
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="review-section">
+                    <h6 class="mb-2">Review</h6>
+                    <div class="mb-2">
+                        <label class="form-label">Reviewer Initials</label>
+                        <input type="text" class="form-control form-control-sm reviewer-initials" 
+                               placeholder="e.g. JD" maxlength="5" 
+                               value="{{ note.reviewer }}">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Approval Status</label>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <button type="button" class="btn btn-outline-success btn-sm review-btn" data-review="y">Approve (Y)</button>
+                            <button type="button" class="btn btn-outline-danger btn-sm review-btn" data-review="n">Not Approve (N)</button>
+                            <button type="button" class="btn btn-outline-warning btn-sm review-btn" data-review="?">Unknown (?)</button>
+                        </div>
+                    </div>
+                    <div class="review-status">
+                        <small class="text-muted">
+                            {% if note.reviewer and note.review %}
+                                <strong>{{ note.reviewer }}:</strong> 
+                                {% if note.review == 'y' %}
+                                    <span class="text-success">Approved</span>
+                                {% elif note.review == 'n' %}
+                                    <span class="text-danger">Not Approved</span>
+                                {% else %}
+                                    <span class="text-warning">Unknown</span>
+                                {% endif %}
+                            {% else %}
+                                <em>No review yet</em>
+                            {% endif %}
+                        </small>
+                    </div>
+                    <div class="review-loading mt-2" style="display: none;">
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Saving review...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Quick navigation buttons -->
+<div class="mt-5 mb-4">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Quick Navigation</h5>
+            <p class="text-muted mb-3">Jump to the next record that needs attention</p>
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ url_for('next_unclassified', current_bib=record.bib) }}" class="btn btn-warning">
+                    <span class="badge bg-white text-warning me-2">○</span>
+                    Next Unclassified
+                </a>
+                <a href="{{ url_for('next_unknown', current_bib=record.bib) }}" class="btn btn-danger">
+                    <span class="badge bg-white text-danger me-2">?</span>
+                    Next Unknown
+                </a>
+                <a href="{{ url_for('next_pending_review', current_bib=record.bib) }}" class="btn btn-info">
+                    <span class="badge bg-white text-info me-2">⏳</span>
+                    Next Pending Review
+                </a>
+            </div>
+            <small class="text-muted d-block mt-2">
+                These buttons will search forward through all records and wrap around to the beginning if needed
+            </small>
+        </div>
+    </div>
+</div>
+
+<script>
+const BIB_ID = '{{ record.bib }}';
+</script>
+{% endblock %}
