@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Upload XML - Admin - Classification Vote{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Upload XML File</h1>
+        <p class="text-muted">Import records and notes from an XML file into the database</p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">← Back to Dashboard</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Select XML File</h5>
+
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="xml_file" class="form-label">XML File</label>
+                        <input type="file"
+                               class="form-control"
+                               id="xml_file"
+                               name="xml_file"
+                               accept=".xml"
+                               required>
+                        <div class="form-text">
+                            Only .xml files are accepted. Maximum file size: 50 MB.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   id="create_votes"
+                                   name="create_votes"
+                                   checked>
+                            <label class="form-check-label" for="create_votes">
+                                <strong>Create initial votes from existing classifications</strong>
+                            </label>
+                            <div class="form-text">
+                                If checked, existing <code>type</code> attributes in the XML will be imported as votes
+                                from the admin user. This is useful when migrating from a single-user system.
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <span class="badge bg-light text-primary me-1">⬆</span>
+                        Upload and Import
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title">Import Information</h5>
+
+                <h6 class="mt-3">Expected XML Format:</h6>
+                <pre class="bg-white p-2 border rounded"><code>&lt;records&gt;
+  &lt;record bib="12345"&gt;
+    &lt;title&gt;Record Title&lt;/title&gt;
+    &lt;note type="w"&gt;Note text...&lt;/note&gt;
+    &lt;note type="o"&gt;Note text...&lt;/note&gt;
+  &lt;/record&gt;
+&lt;/records&gt;</code></pre>
+
+                <h6 class="mt-3">Import Process:</h6>
+                <ol class="small">
+                    <li>Parse XML file</li>
+                    <li>Create records with titles</li>
+                    <li>Create notes for each record</li>
+                    <li>Optionally create initial votes</li>
+                    <li>Display import statistics</li>
+                </ol>
+
+                <h6 class="mt-3">Notes:</h6>
+                <ul class="small">
+                    <li>Duplicate records (same bib ID) will be skipped</li>
+                    <li>Import is idempotent - safe to run multiple times</li>
+                    <li>Original XML file is not modified</li>
+                    <li>Large files may take several minutes to import</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

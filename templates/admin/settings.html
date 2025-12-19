@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Admin - Classification Vote{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>System Settings</h1>
+        <p class="text-muted">Configure system behavior and thresholds</p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">← Back to Dashboard</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Contentious Records Threshold</h5>
+                <p class="text-muted">
+                    Control which notes are marked as "contentious" based on consensus agreement levels.
+                </p>
+
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="contentious_threshold" class="form-label">
+                            Minimum Consensus Threshold: <span id="threshold_display">{{ (contentious_threshold * 100)|round|int }}%</span>
+                        </label>
+                        <input type="range"
+                               class="form-range"
+                               id="contentious_threshold"
+                               name="contentious_threshold"
+                               min="0.50"
+                               max="0.95"
+                               step="0.05"
+                               value="{{ contentious_threshold }}"
+                               oninput="updateThresholdDisplay(this.value)">
+                        <div class="form-text">
+                            Notes where the consensus is below this threshold will be marked as contentious.
+                            Higher values = stricter requirement for agreement.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="min_votes_contentious" class="form-label">
+                            Minimum Votes Required: <span id="min_votes_display">{{ min_votes_contentious }}</span>
+                        </label>
+                        <input type="range"
+                               class="form-range"
+                               id="min_votes_contentious"
+                               name="min_votes_contentious"
+                               min="1"
+                               max="10"
+                               step="1"
+                               value="{{ min_votes_contentious }}"
+                               oninput="updateMinVotesDisplay(this.value)">
+                        <div class="form-text">
+                            A note must have at least this many votes before it can be marked as contentious.
+                            This prevents false positives from insufficient data.
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info" id="threshold_preview">
+                        <strong>Preview:</strong> With a {{ (contentious_threshold * 100)|round|int }}% threshold
+                        and {{ min_votes_contentious }} minimum votes, notes will be marked as contentious when they have
+                        at least {{ min_votes_contentious }} vote{{ 's' if min_votes_contentious != 1 else '' }}
+                        and the consensus is below {{ (contentious_threshold * 100)|round|int }}%.
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        Save Settings
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title">Threshold Guidelines</h5>
+
+                <h6 class="mt-3">Recommended Values:</h6>
+                <ul class="small">
+                    <li><strong>50%</strong> - Very lenient. Marks only ties and near-ties as contentious.</li>
+                    <li><strong>60%</strong> - Lenient. Allows some disagreement before flagging.</li>
+                    <li><strong>70%</strong> - Balanced (default). Good for most use cases.</li>
+                    <li><strong>80%</strong> - Strict. Requires strong consensus.</li>
+                    <li><strong>90%</strong> - Very strict. Only near-unanimous votes pass.</li>
+                </ul>
+
+                <h6 class="mt-3">Examples:</h6>
+                <div class="small">
+                    <p><strong>With 70% threshold and 3 min votes:</strong></p>
+                    <ul>
+                        <li>2 votes: W O → <span class="badge bg-secondary">Not enough votes</span></li>
+                        <li>5 votes: W W W O O → <span class="badge bg-warning">Contentious</span> (60%)</li>
+                        <li>5 votes: W W W W O → <span class="badge bg-success">Not Contentious</span> (80%)</li>
+                    </ul>
+                </div>
+
+                <h6 class="mt-3">Minimum Votes:</h6>
+                <ul class="small">
+                    <li><strong>1-2</strong> - Marks records early, may have false positives</li>
+                    <li><strong>3</strong> - Balanced (default), good for most cases</li>
+                    <li><strong>5+</strong> - Conservative, requires more data before flagging</li>
+                </ul>
+
+                <h6 class="mt-3">Impact:</h6>
+                <ul class="small">
+                    <li>Lower threshold = more contentious records</li>
+                    <li>Higher threshold = fewer contentious records</li>
+                    <li>Lower min votes = contentious marking starts earlier</li>
+                    <li>Higher min votes = requires more votes before marking</li>
+                    <li>Affects the "Contentious" filter view</li>
+                    <li>Does not affect voting or consensus calculation</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateThresholdDisplay(value) {
+    const percent = Math.round(value * 100);
+    const minVotes = document.getElementById('min_votes_contentious').value;
+    document.getElementById('threshold_display').textContent = percent + '%';
+    updatePreview(percent, minVotes);
+}
+
+function updateMinVotesDisplay(value) {
+    const minVotes = parseInt(value);
+    const threshold = Math.round(document.getElementById('contentious_threshold').value * 100);
+    document.getElementById('min_votes_display').textContent = minVotes;
+    updatePreview(threshold, minVotes);
+}
+
+function updatePreview(percent, minVotes) {
+    const voteWord = minVotes == 1 ? 'vote' : 'votes';
+    document.getElementById('threshold_preview').innerHTML =
+        `<strong>Preview:</strong> With a ${percent}% threshold and ${minVotes} minimum votes, ` +
+        `notes will be marked as contentious when they have at least ${minVotes} ${voteWord} ` +
+        `and the consensus is below ${percent}%.`;
+}
+</script>
+{% endblock %}

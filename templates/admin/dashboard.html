@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Classification Vote{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Admin Dashboard</h1>
+        <p class="text-muted">System statistics and management tools</p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('admin.upload_xml') }}" class="btn btn-primary">
+            <span class="badge bg-light text-primary me-1">⬆</span>
+            Upload XML
+        </a>
+        <a href="{{ url_for('admin.export_xml') }}" class="btn btn-success">
+            <span class="badge bg-light text-success me-1">⬇</span>
+            Export XML
+        </a>
+        <a href="{{ url_for('admin.settings') }}" class="btn btn-secondary">
+            <span class="badge bg-light text-secondary me-1">⚙</span>
+            Settings
+        </a>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-muted">Total Records</h5>
+                <p class="display-4">{{ stats.total_records }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-muted">Total Notes</h5>
+                <p class="display-4">{{ stats.total_notes }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-muted">Total Votes</h5>
+                <p class="display-4">{{ stats.total_votes }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-muted">Active Users</h5>
+                <p class="display-4">{{ stats.total_users }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-muted">Avg Votes per Note</h5>
+                <p class="display-4">{{ "%.1f"|format(stats.avg_votes_per_note) }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Contributors -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Top Contributors</h5>
+            </div>
+            <div class="card-body">
+                {% if top_contributors %}
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Username</th>
+                                <th>Votes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for contributor in top_contributors %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>
+                                    <span class="badge bg-success">{{ contributor.username }}</span>
+                                </td>
+                                <td>{{ contributor.vote_count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p class="text-muted">No votes yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Classification Distribution</h5>
+            </div>
+            <div class="card-body">
+                {% if classification_dist %}
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Classification</th>
+                                <th>Count</th>
+                                <th>Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set total_class_votes = classification_dist | sum(attribute=1) %}
+                            {% for classification, count in classification_dist %}
+                            <tr>
+                                <td><span class="badge bg-primary">{{ classification.upper() }}</span></td>
+                                <td>{{ count }}</td>
+                                <td>{{ "%.1f"|format((count / total_class_votes * 100)) }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p class="text-muted">No classifications yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Activity (Last 20 Votes)</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_activity %}
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Classification</th>
+                                <th>Record</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for activity in recent_activity %}
+                            <tr>
+                                <td><span class="badge bg-success">{{ activity.username }}</span></td>
+                                <td><span class="badge bg-primary">{{ activity.classification.upper() }}</span></td>
+                                <td>
+                                    <a href="{{ url_for('main.record_detail', bib_id=activity.record_bib) }}">
+                                        {{ activity.record_bib }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ activity.voted_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p class="text-muted">No recent activity</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{{ url_for('main.index') }}" class="btn btn-secondary">← Back to Records</a>
+</div>
+{% endblock %}

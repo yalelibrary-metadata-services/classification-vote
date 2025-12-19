@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}Record {{ record.bib }} - Classification Vote{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1>Record {{ record.bib }}</h1>
+        <small class="text-muted">Record {{ current_index + 1 }} of {{ total_records }}</small>
+        <div class="mt-1">
+            <a href="https://search.library.yale.edu/catalog/{{ record.bib }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-external-link-alt"></i> View in Quicksearch
+            </a>
+            <a href="https://datasync.library.yale.edu/data/oldbibid/{{ record.bib }}" target="_blank" class="btn btn-outline-secondary btn-sm ms-2">
+                <i class="fas fa-external-link-alt"></i> View in Data Synchronizer
+            </a>
+        </div>
+    </div>
+    <div>
+        <a href="{{ url_for('main.index') }}" class="btn btn-secondary">← Back to Records</a>
+    </div>
+</div>
+
+<!-- Progress meter -->
+<div class="progress-container mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <small class="text-muted">Progress through records</small>
+        <small class="text-muted">{{ ((current_index + 1) / total_records * 100) | round(1) }}% complete</small>
+    </div>
+    <div class="progress" style="height: 8px;">
+        <div class="progress-bar bg-primary"
+             role="progressbar"
+             style="width: {{ ((current_index + 1) / total_records * 100) }}%;"
+             aria-valuenow="{{ current_index + 1 }}"
+             aria-valuemin="0"
+             aria-valuemax="{{ total_records }}">
+        </div>
+    </div>
+    <div class="d-flex justify-content-between mt-1">
+        <small class="text-muted">First</small>
+        <small class="text-muted">Last</small>
+    </div>
+</div>
+
+<!-- Navigation buttons -->
+<div class="navigation-buttons">
+    <div class="d-flex justify-content-between">
+        <div>
+            {% if prev_record %}
+                <a href="{{ url_for('main.record_detail', bib_id=prev_record.bib) }}" class="btn btn-outline-primary">
+                    ← Previous Record ({{ prev_record.bib }})
+                </a>
+            {% else %}
+                <button class="btn btn-outline-secondary" disabled>← Previous Record</button>
+            {% endif %}
+        </div>
+        <div>
+            {% if next_record %}
+                <a href="{{ url_for('main.record_detail', bib_id=next_record.bib) }}" class="btn btn-outline-primary">
+                    Next Record ({{ next_record.bib }}) →
+                </a>
+            {% else %}
+                <button class="btn btn-outline-secondary" disabled>Next Record →</button>
+            {% endif %}
+        </div>
+    </div>
+    <div class="nav-hint text-center">
+        <small>Use ← → arrow keys to navigate between records</small>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Title</h5>
+        <p class="card-text">{{ record.title }}</p>
+    </div>
+</div>
+
+<h2>Notes Classification & Review</h2>
+<p class="text-muted mb-4">
+    <strong>Classification Types:</strong><br>
+    <span class="badge bg-info">W</span> Work - Content related to the work itself<br>
+    <span class="badge bg-warning">O</span> Object - Physical description of the manuscript<br>
+    <span class="badge bg-success">A</span> Administrative - Cataloging or processing information<br>
+    <span class="badge bg-secondary">OW</span> Object/Work - Combined physical and content description<br>
+    <span class="badge bg-dark">AW</span> Administrative/Work - Combined administrative and content information<br>
+    <span class="badge bg-primary">AO</span> Administrative/Object - Combined administrative and physical information<br>
+    <span class="badge bg-danger">?</span> Unknown - Classification unclear or uncertain
+</p>
+
+{% for note in record.notes %}
+<div class="card mb-3 note-card" data-note-index="{{ note.index }}">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="card-subtitle mb-2">
+                    Note {{ loop.index }}
+                    {% if note.identical_count > 1 %}
+                        <span class="badge bg-info ms-2" title="This exact note appears in {{ note.identical_count }} records">
+                            <i class="fas fa-copy"></i> {{ note.identical_count }} identical
+                        </span>
+                    {% endif %}
+                </h6>
+                <p class="card-text">{{ note.text }}</p>
+
+                <!-- Translate button -->
+                <a href="https://translate.google.com/?sl=auto&tl=en&text={{ note.text | urlencode }}&op=translate"
+                   target="_blank"
+                   class="btn btn-sm btn-outline-info mb-2"
+                   title="Translate this note">
+                    <i class="fas fa-language"></i>
+                </a>
+
+                <!-- Toggle button for showing other votes -->
+                <button class="btn btn-sm btn-outline-secondary mb-2 toggle-votes-btn" type="button">
+                    <i class="fas fa-eye"></i> Show Other Votes
+                </button>
+
+                <!-- Vote Distribution Display (hidden by default) -->
+                <div class="vote-distribution mb-3" style="display: none;">
+                    {% if note.distribution.total > 0 %}
+                        <small class="text-muted">
+                            <strong>All Votes:</strong><br>
+                            {% for classification, count in note.distribution.votes.items() %}
+                                {% set prob = note.distribution.probabilities[classification] %}
+                                {% set is_consensus = (classification == note.distribution.consensus) %}
+                                <span class="badge bg-{{ 'success' if is_consensus else 'secondary' }} me-1">
+                                    {{ classification.upper() }}: {{ (prob * 100)|round|int }}% ({{ count }})
+                                </span>
+                            {% endfor %}
+                        </small>
+                        <br>
+                        <small>
+                            <strong>Consensus:</strong>
+                            <span class="badge bg-primary">{{ note.distribution.consensus.upper() }}</span>
+                            at {{ (note.distribution.consensus_probability * 100)|round|int }}% confidence
+                            ({{ note.distribution.total }} vote{{ 's' if note.distribution.total != 1 else '' }})
+                            {% if note.distribution.is_contentious %}
+                                <span class="badge bg-warning text-dark">CONTENTIOUS</span>
+                            {% endif %}
+                        </small>
+                    {% else %}
+                        <small class="text-warning"><strong>No votes yet</strong> - be the first to classify!</small>
+                    {% endif %}
+                    {% if note.user_vote %}
+                        <br><small class="text-info"><strong>Your vote:</strong> {{ note.user_vote.upper() }}</small>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="classification-buttons">
+                    <h6 class="mb-2">Your Classification</h6>
+                    <div class="btn-group-vertical w-100" role="group">
+                        <button type="button" class="btn btn-{{ 'info' if note.user_vote == 'w' else 'outline-info' }} btn-sm vote-btn" data-classification="w">Work (W)</button>
+                        <button type="button" class="btn btn-{{ 'warning' if note.user_vote == 'o' else 'outline-warning' }} btn-sm vote-btn" data-classification="o">Object (O)</button>
+                        <button type="button" class="btn btn-{{ 'success' if note.user_vote == 'a' else 'outline-success' }} btn-sm vote-btn" data-classification="a">Administrative (A)</button>
+                        <button type="button" class="btn btn-{{ 'secondary' if note.user_vote == 'ow' else 'outline-secondary' }} btn-sm vote-btn" data-classification="ow">Object/Work (OW)</button>
+                        <button type="button" class="btn btn-{{ 'dark' if note.user_vote == 'aw' else 'outline-dark' }} btn-sm vote-btn" data-classification="aw">Administrative/Work (AW)</button>
+                        <button type="button" class="btn btn-{{ 'primary' if note.user_vote == 'ao' else 'outline-primary' }} btn-sm vote-btn" data-classification="ao">Administrative/Object (AO)</button>
+                        <button type="button" class="btn btn-{{ 'danger' if note.user_vote == '?' else 'outline-danger' }} btn-sm vote-btn" data-classification="?">Unknown (?)</button>
+                    </div>
+
+                    {% if note.identical_count > 1 %}
+                    <div class="mt-3 p-2 bg-light border rounded">
+                        <div class="form-check">
+                            <input class="form-check-input vote-all-identical"
+                                   type="checkbox"
+                                   id="vote_all_{{ note.index }}"
+                                   data-note-text="{{ note.text }}">
+                            <label class="form-check-label small" for="vote_all_{{ note.index }}">
+                                <strong>Vote on all {{ note.identical_count }} identical notes</strong>
+                            </label>
+                        </div>
+                        <small class="text-muted d-block mt-1">
+                            <i class="fas fa-info-circle"></i> This will apply your vote to all notes with this exact text
+                        </small>
+                    </div>
+                    {% endif %}
+
+                    <div class="vote-status mt-2" style="display: none;">
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="voters-section" style="display: none;">
+                    <h6 class="mb-2">Who Voted?</h6>
+                    {% if note.voters %}
+                        <div class="voters-list">
+                            {% for classification, users in note.voters.items() %}
+                                <div class="mb-2">
+                                    <span class="badge bg-primary">{{ classification.upper() }}</span>
+                                    <div class="mt-1">
+                                        {% for username in users %}
+                                            <small class="badge bg-secondary me-1">{{ username }}</small>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <small class="text-muted">No votes yet</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Navigation buttons (bottom) -->
+<div class="navigation-buttons mt-4">
+    <div class="d-flex justify-content-between">
+        <div>
+            {% if prev_record %}
+                <a href="{{ url_for('main.record_detail', bib_id=prev_record.bib) }}" class="btn btn-outline-primary">
+                    ← Previous Record ({{ prev_record.bib }})
+                </a>
+            {% else %}
+                <button class="btn btn-outline-secondary" disabled>← Previous Record</button>
+            {% endif %}
+        </div>
+        <div>
+            {% if next_record %}
+                <a href="{{ url_for('main.record_detail', bib_id=next_record.bib) }}" class="btn btn-outline-primary">
+                    Next Record ({{ next_record.bib }}) →
+                </a>
+            {% else %}
+                <button class="btn btn-outline-secondary" disabled>Next Record →</button>
+            {% endif %}
+        </div>
+    </div>
+    <div class="nav-hint text-center">
+        <small>Use ← → arrow keys to navigate between records</small>
+    </div>
+</div>
+
+<!-- Quick navigation buttons -->
+<div class="mt-5 mb-4">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Quick Navigation</h5>
+            <p class="text-muted mb-3">Jump to the next record that needs attention</p>
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ url_for('main.next_unclassified', current_bib=record.bib) }}" class="btn btn-warning">
+                    <span class="badge bg-white text-warning me-2">○</span>
+                    Next Unclassified
+                </a>
+                <a href="{{ url_for('main.next_unknown', current_bib=record.bib) }}" class="btn btn-danger">
+                    <span class="badge bg-white text-danger me-2">?</span>
+                    Next Unknown
+                </a>
+                <a href="{{ url_for('main.next_pending_review', current_bib=record.bib) }}" class="btn btn-info">
+                    <span class="badge bg-white text-info me-2">⏳</span>
+                    Next Pending Review
+                </a>
+            </div>
+            <small class="text-muted d-block mt-2">
+                These buttons will search forward through all records and wrap around to the beginning if needed
+            </small>
+        </div>
+    </div>
+</div>
+
+<script>
+const BIB_ID = '{{ record.bib }}';
+</script>
+{% endblock %}

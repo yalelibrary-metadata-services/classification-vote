@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Records - Classification Vote{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1>Classification Records</h1>
+        <p class="lead mb-0">Select a record to classify its notes</p>
+    </div>
+    <div>
+        <a href="{{ url_for('main.start_unclassified') }}" class="btn btn-warning me-2">
+            <span class="badge bg-white text-warning me-2">○</span>
+            Start with Unclassified
+        </a>
+        <a href="{{ url_for('filters.unknown_records') }}" class="btn btn-outline-danger">
+            <span class="badge bg-danger me-2">?</span>
+            View Unknown Classifications
+        </a>
+    </div>
+</div>
+
+{% if records %}
+<div class="row">
+    {% for record in records %}
+    <div class="col-md-12 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Record {{ record.bib }}</h5>
+                <p class="card-text">{{ record.title[:200] }}{% if record.title|length > 200 %}...{% endif %}</p>
+                <p class="text-muted">{{ record.notes }} notes to classify</p>
+                <a href="{{ url_for('main.record_detail', bib_id=record.bib) }}" class="btn btn-primary">Classify Notes</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-warning">
+    <h4>No data found</h4>
+    <p>Please ensure you have a valid XML file named 'data.xml' in the application directory.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Notes You Haven't Voted On - Classification Vote{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1>Notes You Haven't Voted On</h1>
+        <p class="text-muted mb-0">Records with notes that are awaiting your classification vote</p>
+    </div>
+    <div>
+        <a href="{{ url_for('main.index') }}" class="btn btn-secondary">← Back to All Records</a>
+    </div>
+</div>
+
+{% if pending_records %}
+<div class="alert alert-info mb-4">
+    <h5 class="alert-heading">
+        <i class="bi bi-clock"></i> Found {{ total_pending_records }} record{{ 's' if total_pending_records != 1 else '' }}
+    </h5>
+    <p class="mb-0">
+        These records contain notes where you haven't submitted your classification vote yet.
+    </p>
+</div>
+
+<div class="row">
+    {% for record in pending_records %}
+    <div class="col-md-12 mb-4">
+        <div class="card border-info">
+            <div class="card-header bg-light">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="card-title mb-1">Record {{ record.bib }}</h5>
+                        <small class="text-muted">
+                            {{ record.pending_count }} unvoted note{{ 's' if record.pending_count != 1 else '' }}
+                            out of {{ record.total_notes }} total
+                        </small>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('main.record_detail', bib_id=record.bib) }}" class="btn btn-primary btn-sm">
+                            Vote on Notes
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <h6 class="card-subtitle mb-3 text-muted">Title</h6>
+                <p class="card-text">{{ record.title }}</p>
+                
+                <h6 class="card-subtitle mb-2 text-muted">Notes You Haven't Voted On</h6>
+                {% for note in record.pending_notes %}
+                <div class="alert alert-info py-2 mb-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <strong>Note {{ loop.index }}:</strong>
+                            <span class="ms-2">{{ note.text }}</span>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    {% if note.distribution.total > 0 %}
+                                        <strong>Current Votes:</strong>
+                                        {% for classification, count in note.distribution.votes.items() %}
+                                            {% set prob = note.distribution.probabilities[classification] %}
+                                            {% set is_consensus = (classification == note.distribution.consensus) %}
+                                            <span class="badge bg-{{ 'success' if is_consensus else 'secondary' }} me-1">
+                                                {{ classification.upper() }}: {{ (prob * 100)|round|int }}% ({{ count }})
+                                            </span>
+                                        {% endfor %}
+                                        | <strong>Consensus:</strong> <span class="badge bg-primary">{{ note.distribution.consensus.upper() }}</span>
+                                        {% if note.distribution.is_contentious %}
+                                            <span class="badge bg-warning text-dark">CONTENTIOUS</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-warning">No votes yet - be the first!</span>
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        <span class="badge bg-info ms-2">⏳</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="mt-4 text-center">
+    <p class="text-muted">
+        <small>
+            Use the "Vote on Notes" button to add your classification vote to these notes.
+        </small>
+    </p>
+</div>
+
+{% else %}
+<div class="alert alert-success text-center py-5">
+    <h4 class="alert-heading">
+        <i class="bi bi-check-circle"></i> All caught up!
+    </h4>
+    <p class="mb-3">You've voted on all available notes!</p>
+    <p class="mb-0 text-muted">There are no notes left that need your classification vote.</p>
+</div>
+{% endif %}
+{% endblock %}

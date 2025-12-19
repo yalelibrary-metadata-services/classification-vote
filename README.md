@@ -1,0 +1,228 @@
+# Classification Vote Web App
+
+A Flask web application for collaborative voting on note classifications in manuscript records. Multiple users can vote on classifications, with automatic consensus calculation and contentious note detection.
+
+## Features
+
+### Multi-User Voting System
+- **Collaborative classification**: Multiple users can vote on the same notes
+- **Consensus calculation**: Automatic calculation of consensus based on vote distribution
+- **Vote probability**: Shows percentage agreement for each classification
+- **Contentious detection**: Flags notes where consensus is below configurable threshold
+- **Vote history**: Track who voted for which classifications
+- **Vote updates**: Users can change their vote at any time
+
+### Classification Types
+Seven classification types for manuscript notes:
+- **Work (W)**: Content related to the work itself
+- **Object (O)**: Physical description of the manuscript
+- **Administrative (A)**: Cataloging or processing information
+- **Object/Work (OW)**: Combined physical and content description
+- **Administrative/Work (AW)**: Combined administrative and content information
+- **Administrative/Object (AO)**: Combined administrative and physical information
+- **Unknown (?)**: Classification unclear or uncertain
+
+### User Features
+- **Simple authentication**: Username-only login (no passwords required)
+- **Vote privacy**: Other users' votes hidden by default, optional to view
+- **Bulk voting**: Vote on all identical notes at once
+- **Translation**: Built-in Google Translate integration for foreign language notes
+- **Progress tracking**: Visual progress meter showing completion percentage
+- **Keyboard navigation**: Use ← → arrow keys to navigate between records
+- **Quick navigation**: Jump to next unclassified, unknown, or pending review record
+
+### Admin Features
+Login with username "Admin" (case-insensitive) to access:
+- **Dashboard**: Statistics on votes, users, and classifications
+- **XML Import**: Upload XML files to populate the database
+- **XML Export**: Export classifications with configurable confidence threshold
+- **Settings**: Adjust contentious threshold and minimum vote requirements
+- **User management**: View contributor statistics
+
+### Filtering and Navigation
+- **Unclassified**: Records with no votes yet
+- **Unknown**: Records with "?" consensus
+- **Pending Review**: Records where current user hasn't voted
+- **Contentious**: Records with low consensus agreement
+- **Identical Notes**: Indicator showing how many records share the same note text
+
+## Setup
+
+### 1. Install UV
+If you don't have UV installed:
+```bash
+# macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Or with pip
+pip install uv
+```
+
+### 2. Install Dependencies
+```bash
+# Create virtual environment and install packages
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv pip install -r requirements.txt
+```
+
+### 3. Run the Application
+```bash
+# The database will be initialized automatically on first run
+python app.py
+```
+
+Open your browser to `http://localhost:5000`
+
+### 4. Import Data (Optional)
+If you have an existing `data.xml` file:
+```bash
+# Run the migration script
+python migrate_existing_data.py
+```
+
+Or use the admin interface to upload XML files after logging in.
+
+### Port 5000 Issues (macOS)
+If you encounter a "Port 5000 is in use" error on macOS, this is because AirPlay Receiver uses port 5000 by default.
+
+**Option 1: Use a different port**
+```bash
+python -c "from app import app; app.run(debug=True, port=8080)"
+```
+Then visit `http://localhost:8080`
+
+**Option 2: Disable AirPlay Receiver**
+Go to **System Preferences → General → AirDrop & Handoff** and turn off "AirPlay Receiver"
+
+## Usage
+
+### For Regular Users
+
+1. **Login**: Enter your username (no password needed)
+2. **Browse records**: Click "Start Classifying" or browse the record list
+3. **Classify notes**:
+   - Click the appropriate classification button (W, O, A, OW, AW, AO, or ?)
+   - Optionally click "Show Other Votes" to see what others voted
+   - Use the translate button (🌐) for foreign language notes
+4. **Bulk voting**: Check "Vote on all X identical notes" to classify all matching notes at once
+5. **Navigate**: Use arrow keys or navigation buttons to move between records
+6. **Quick jump**: Use "Next Unclassified", "Next Unknown", or "Next Pending Review" buttons
+
+### For Administrators
+
+1. **Login** as "Admin" (or "admin", "ADMIN" - case insensitive)
+2. **Access admin panel**: Click "Admin" in the navigation menu
+3. **View statistics**: See total votes, users, and classification distribution
+4. **Import XML**: Upload data.xml files to populate the database
+5. **Export XML**: Download classifications with custom confidence threshold
+6. **Configure settings**:
+   - Adjust contentious threshold (default 70%)
+   - Set minimum votes required for contentious detection (default 3)
+
+### Understanding Consensus
+
+- **Consensus**: The classification with the most votes
+- **Confidence**: Percentage of votes for the consensus classification
+- **Contentious**: Notes marked when consensus is below threshold with minimum votes
+  - Example: With 70% threshold and 3 min votes, a note with 2 votes for "W" and 1 vote for "O" shows 67% confidence and is marked contentious
+
+## Database Structure
+
+The application uses SQLite with the following tables:
+
+- **users**: User accounts (username, is_admin)
+- **records**: Manuscript records (bib_id, title)
+- **notes**: Individual notes within records (text, note_index)
+- **votes**: User votes on notes (note_id, user_id, classification)
+- **settings**: Configurable system settings (contentious threshold, min votes)
+
+Database file: `instance/classification.db`
+
+## XML Format
+
+### Import Format
+```xml
+<?xml version='1.0' encoding='utf-8'?>
+<records>
+  <record bib="unique_id">
+    <title>Record title</title>
+    <note type="w">Note content</note>
+    <note type="o">Another note</note>
+  </record>
+</records>
+```
+
+### Export Format
+```xml
+<?xml version='1.0' encoding='utf-8'?>
+<records>
+  <record bib="unique_id">
+    <title>Record title</title>
+    <note type="w" consensus_probability="0.85" vote_count="12">Note content</note>
+    <note type="o" consensus_probability="0.67" vote_count="9">Another note</note>
+  </record>
+</records>
+```
+
+Only notes meeting the confidence threshold are exported.
+
+## Development
+
+### Project Structure
+```
+classification-vote/
+├── app.py                 # Application factory and initialization
+├── models.py              # SQLAlchemy database models
+├── auth.py                # Authentication blueprint
+├── config.py              # Configuration settings
+├── routes/
+│   ├── main.py           # Main browsing and record routes
+│   ├── voting.py         # Vote submission endpoints
+│   ├── filters.py        # Filter views (unknown, contentious, etc.)
+│   └── admin.py          # Admin interface routes
+├── utils/
+│   ├── probability.py    # Vote distribution and consensus calculation
+│   ├── xml_parser.py     # XML import functionality
+│   └── xml_exporter.py   # XML export functionality
+├── templates/            # Jinja2 HTML templates
+├── static/
+│   ├── js/app.js        # Client-side voting and navigation
+│   └── css/style.css    # Custom styling
+└── instance/
+    └── classification.db # SQLite database
+```
+
+### Adding New Features
+- Routes: Add to appropriate blueprint in `routes/`
+- Models: Update `models.py` and create migration
+- UI: Modify templates in `templates/`
+- Client logic: Update `static/js/app.js`
+
+## Troubleshooting
+
+### Database Issues
+```bash
+# Reset database (WARNING: destroys all data)
+rm instance/classification.db
+# Database will be recreated automatically when you run the app
+python app.py
+```
+
+### Port Conflicts
+```bash
+# Check what's using port 5000
+lsof -i :5000
+
+# Use alternative port
+python -c "from app import app; app.run(debug=True, port=8080)"
+```
+
+### Import Errors
+- Ensure XML file is well-formed
+- Check that `<record bib="...">` attributes are unique
+- Verify note text is properly encoded (UTF-8)
+
+## License
+
+MIT License - see LICENSE file for details

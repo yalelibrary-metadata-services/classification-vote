@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Export XML - Admin - Classification Vote{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Export to XML</h1>
+        <p class="text-muted">Export classified notes with consensus probabilities</p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">← Back to Dashboard</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Export Options</h5>
+
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="confidence_threshold" class="form-label">
+                            Confidence Threshold: <span id="threshold_display">{{ (default_threshold * 100)|round|int }}%</span>
+                        </label>
+                        <input type="range"
+                               class="form-range"
+                               id="confidence_threshold"
+                               name="confidence_threshold"
+                               min="0"
+                               max="1"
+                               step="0.05"
+                               value="{{ default_threshold }}"
+                               oninput="document.getElementById('threshold_display').textContent = Math.round(this.value * 100) + '%'">
+                        <div class="form-text">
+                            Only export notes where consensus probability is greater than or equal to this threshold.
+                            Lower thresholds include more notes but with less certainty.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   id="include_stats"
+                                   name="include_stats"
+                                   checked>
+                            <label class="form-check-label" for="include_stats">
+                                <strong>Include vote statistics</strong>
+                            </label>
+                            <div class="form-text">
+                                Add <code>consensus_probability</code> and <code>vote_count</code> attributes to each note element.
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success">
+                        <span class="badge bg-light text-success me-1">⬇</span>
+                        Generate and Download XML
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title">Export Information</h5>
+
+                <h6 class="mt-3">Output XML Format:</h6>
+                <pre class="bg-white p-2 border rounded"><code>&lt;records&gt;
+  &lt;record bib="12345"&gt;
+    &lt;title&gt;Title&lt;/title&gt;
+    &lt;note type="w"
+          consensus_probability="0.85"
+          vote_count="12"&gt;
+      Note text...
+    &lt;/note&gt;
+  &lt;/record&gt;
+&lt;/records&gt;</code></pre>
+
+                <h6 class="mt-3">Use Cases:</h6>
+                <ul class="small">
+                    <li><strong>Model Training:</strong> Export high-confidence notes (≥80%) for training ML models</li>
+                    <li><strong>Quality Review:</strong> Export low-confidence notes (50-70%) for manual review</li>
+                    <li><strong>Backup:</strong> Export all classified data (0%) for archival</li>
+                </ul>
+
+                <h6 class="mt-3">Notes:</h6>
+                <ul class="small">
+                    <li>Notes without votes are never included</li>
+                    <li>Filename includes timestamp</li>
+                    <li>Original database is not modified</li>
+                    <li>Export can be re-run anytime</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

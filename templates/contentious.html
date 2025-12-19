@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Contentious Records - Classification Vote{% endblock %}
+
+{% block content %}
+<h1>Contentious Records</h1>
+<p class="lead">
+    Records with notes where consensus is below the configured threshold.
+    These notes have disagreement among classifiers and may need additional review.
+</p>
+
+{% if contentious_records %}
+    <div class="alert alert-info">
+        Found <strong>{{ total_contentious_records }}</strong> record(s) with contentious notes.
+    </div>
+
+    {% for record in contentious_records %}
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5 class="mb-0">
+                Record {{ record.bib }}
+                <span class="badge bg-warning text-dark">{{ record.contentious_count }} contentious</span>
+                <span class="badge bg-secondary">{{ record.total_notes }} total notes</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            <h6>Title:</h6>
+            <p>{{ record.title }}</p>
+
+            <h6 class="mt-3">Contentious Notes:</h6>
+            <div class="list-group">
+                {% for note in record.contentious_notes %}
+                <div class="list-group-item">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">Note {{ note.index + 1 }}</h6>
+                        <span class="badge bg-warning text-dark">CONTENTIOUS</span>
+                    </div>
+                    <p class="mb-1">{{ note.text }}</p>
+
+                    <!-- Vote Distribution -->
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            <strong>Vote Distribution:</strong><br>
+                            {% for classification, count in note.distribution.votes.items() %}
+                                {% set prob = note.distribution.probabilities[classification] %}
+                                {% set is_consensus = (classification == note.distribution.consensus) %}
+                                <span class="badge bg-{{ 'primary' if is_consensus else 'secondary' }} me-1">
+                                    {{ classification.upper() }}: {{ (prob * 100)|round|int }}% ({{ count }} vote{{ 's' if count != 1 else '' }})
+                                </span>
+                            {% endfor %}
+                        </small>
+                        <br>
+                        <small>
+                            <strong>Current Consensus:</strong>
+                            <span class="badge bg-primary">{{ note.distribution.consensus.upper() }}</span>
+                            at {{ (note.distribution.consensus_probability * 100)|round|int }}% confidence
+                            ({{ note.distribution.total }} total vote{{ 's' if note.distribution.total != 1 else '' }})
+                        </small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="mt-3">
+                <a href="{{ url_for('main.record_detail', bib_id=record.bib) }}" class="btn btn-primary">
+                    Review & Classify Notes
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="alert alert-success">
+        <h4 class="alert-heading">No Contentious Records!</h4>
+        <p>All notes with sufficient votes have strong consensus. Great work!</p>
+        <hr>
+        <p class="mb-0">
+            Records are marked as contentious when they don't meet the configured consensus threshold.
+            You can adjust this threshold in the admin settings.
+        </p>
+    </div>
+{% endif %}
+
+<div class="mt-4">
+    <a href="{{ url_for('main.index') }}" class="btn btn-secondary">← Back to All Records</a>
+</div>
+{% endblock %}
