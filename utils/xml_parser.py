@@ -104,6 +104,7 @@ def clear_database():
     Clear all data from database (use with caution!).
     Does not delete users or settings.
     """
+    from models import Review
     try:
         Vote.query.delete()
         Review.query.delete()

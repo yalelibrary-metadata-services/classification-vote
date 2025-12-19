@@ -1,0 +1,32 @@
+# Classification Schema for MARC 500 Field Notes
+
+primary_classes:
+  w:
+    name: "Work"
+    description: "When a note is about the intellectual content of the resource: its conception, realization, or meaning, independent of any particular copy."
+    
+  o:
+    name: "Object"
+    description: "When a note is about the physical instantiation of the resource: the particular item in hand and its tangible characteristics."
+    
+  a:
+    name: "Administrative"
+    description: "When a note is about the context, process, or conditions of description, management, or access for the resource or its record, rather than intellectual content or a particular physical instance."
+
+hybrid_classes:
+  ow:
+    name: "Object + Work"
+    description: "When a single note contains substantive signals of both object-level and work-level content."
+    
+  aw:
+    name: "Administrative + Work"
+    description: "When a single note contains substantive signals of both administrative and work-level content."
+    
+  ao:
+    name: "Administrative + Object"
+    description: "When a single note contains substantive signals of both administrative and object-level content."
+
+triage_class:
+  "?":
+    name: "Unknown"
+    description: "When no class can be assigned even provisionally."

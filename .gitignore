@@ -18,6 +18,10 @@ instance/
 *.db-shm
 *.db-wal
 
+# One-time migration scripts (not tracked)
+import_real_data.py
+migrate_existing_data.py
+
 # IDE
 .vscode/
 .idea/
