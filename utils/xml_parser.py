@@ -1,13 +1,14 @@
 import xml.etree.ElementTree as ET
 from models import db, Record, Note, Vote
 
-def import_xml_file(xml_path, admin_user_id=None):
+def import_xml_file(xml_path, admin_user_id=None, source_filename=None):
     """
     Import XML file into database.
 
     Args:
         xml_path: Path to XML file
         admin_user_id: If provided, create initial votes from existing type attributes
+        source_filename: Optional filename to use (if None, extracted from XML path attribute)
 
     Returns:
         dict with keys:
@@ -26,6 +27,17 @@ def import_xml_file(xml_path, admin_user_id=None):
     try:
         tree = ET.parse(xml_path)
         root = tree.getroot()
+        
+        # Extract filename from path attribute or xml_path
+        if source_filename is None:
+            path_attr = root.get('path', '')
+            if path_attr:
+                # Extract filename from path: "raw/XML/all_raw.xml" -> "all_raw.xml"
+                source_filename = path_attr.split('/')[-1]
+            else:
+                # Fallback: extract from xml_path
+                import os
+                source_filename = os.path.basename(xml_path)
 
         for record_elem in root.findall('record'):
             try:
@@ -44,8 +56,8 @@ def import_xml_file(xml_path, admin_user_id=None):
                 title_elem = record_elem.find('title')
                 title_text = title_elem.text if title_elem is not None and title_elem.text else 'No title'
 
-                # Create record
-                record = Record(bib_id=bib_id, title=title_text)
+                # Create record with source filename
+                record = Record(bib_id=bib_id, title=title_text, source_filename=source_filename)
                 db.session.add(record)
                 db.session.flush()  # Get record.id
 

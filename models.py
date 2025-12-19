@@ -28,10 +28,15 @@ class Record(db.Model):
     bib_id = db.Column(db.String(50), unique=True, nullable=False, index=True)
     title = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Import metadata (nullable, for reference only)
+    source_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)
+    source_filename = db.Column(db.String(255), nullable=True, index=True)
 
     # Relationships
     notes = db.relationship('Note', backref='record', lazy='select',
                            cascade='all, delete-orphan', order_by='Note.note_index')
+    source_user = db.relationship('User', foreign_keys=[source_user_id], backref='source_records')
 
     def __repr__(self):
         return f'<Record {self.bib_id}>'

@@ -12,11 +12,12 @@ ENV/
 .venv
 env.sh
 
-# Flask
-instance/
-*.db
-*.db-shm
-*.db-wal
+# Flask - database files ARE tracked (prefilled database)
+# Explicitly allow the database file (prefilled)
+!instance/classification.db
+# Ignore WAL and SHM files (temporary SQLite files)
+instance/*.db-shm
+instance/*.db-wal
 
 # One-time migration scripts (not tracked)
 import_real_data.py
