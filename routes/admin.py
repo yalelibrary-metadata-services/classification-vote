@@ -52,6 +52,7 @@ def dashboard():
 
     # Recent activity (last 20 votes)
     recent_votes = db.session.query(Vote, User, Note, Record)\
+        .select_from(Vote)\
         .join(User)\
         .join(Note)\
         .join(Record)\
