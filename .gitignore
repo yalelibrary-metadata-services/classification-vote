@@ -19,10 +19,6 @@ env.sh
 instance/*.db-shm
 instance/*.db-wal
 
-# One-time migration scripts (not tracked)
-import_real_data.py
-migrate_existing_data.py
-
 # IDE
 .vscode/
 .idea/
