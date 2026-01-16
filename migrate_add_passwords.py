@@ -10,11 +10,13 @@ Usage:
     python migrate_add_passwords.py
 """
 
-from app import app, db
+from app import create_app
+from models import db
 from sqlalchemy import text
 
 def migrate():
     """Add password_hash column to users table"""
+    app = create_app()
     with app.app_context():
         try:
             # Check if column already exists
