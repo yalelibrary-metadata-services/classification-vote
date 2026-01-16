@@ -196,7 +196,7 @@ def next_unknown(current_bib):
 @main_bp.route('/next-pending-review/<current_bib>')
 @login_required
 def next_pending_review(current_bib):
-    """Navigate to next record with notes pending review by current user"""
+    """Navigate to next record with notes pending review by current user (any unvoted notes)"""
     current_record = Record.query.filter_by(bib_id=current_bib).first_or_404()
     user_id = session.get('user_id')
 
@@ -223,4 +223,51 @@ def next_pending_review(current_bib):
                 return redirect(url_for('main.record_detail', bib_id=record.bib_id))
 
     # No more unvoted notes
+    return redirect(url_for('main.record_detail', bib_id=current_bib))
+
+
+@main_bp.route('/next-with-other-votes/<current_bib>')
+@login_required
+def next_with_other_votes(current_bib):
+    """Navigate to next record with notes that others have voted on but current user hasn't"""
+    current_record = Record.query.filter_by(bib_id=current_bib).first_or_404()
+    user_id = session.get('user_id')
+
+    # Find notes where others have voted but current user hasn't
+    records = Record.query.filter(Record.bib_id > current_bib)\
+                          .order_by(Record.bib_id).all()
+
+    for record in records:
+        notes = Note.query.filter_by(record_id=record.id).all()
+        for note in notes:
+            # Check if current user has voted
+            user_vote = Vote.query.filter_by(note_id=note.id, user_id=user_id).first()
+            if not user_vote:
+                # Check if others have voted
+                other_votes = Vote.query.filter(
+                    Vote.note_id == note.id,
+                    Vote.user_id != user_id
+                ).first()
+                if other_votes:
+                    return redirect(url_for('main.record_detail', bib_id=record.bib_id))
+
+    # Wrap around
+    records = Record.query.filter(Record.bib_id < current_bib)\
+                          .order_by(Record.bib_id).all()
+
+    for record in records:
+        notes = Note.query.filter_by(record_id=record.id).all()
+        for note in notes:
+            # Check if current user has voted
+            user_vote = Vote.query.filter_by(note_id=note.id, user_id=user_id).first()
+            if not user_vote:
+                # Check if others have voted
+                other_votes = Vote.query.filter(
+                    Vote.note_id == note.id,
+                    Vote.user_id != user_id
+                ).first()
+                if other_votes:
+                    return redirect(url_for('main.record_detail', bib_id=record.bib_id))
+
+    # No more notes with others' votes pending user review
     return redirect(url_for('main.record_detail', bib_id=current_bib))

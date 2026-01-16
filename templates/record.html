@@ -237,19 +237,21 @@
             <div class="d-flex gap-2 flex-wrap">
                 <a href="{{ url_for('main.next_unclassified', current_bib=record.bib) }}" class="btn btn-warning">
                     <span class="badge bg-white text-warning me-2">○</span>
-                    Next Unclassified
+                    Next with No Votes
+                </a>
+                <a href="{{ url_for('main.next_with_other_votes', current_bib=record.bib) }}" class="btn btn-info">
+                    <span class="badge bg-white text-info me-2">⏳</span>
+                    Next Pending Review
                 </a>
                 <a href="{{ url_for('main.next_unknown', current_bib=record.bib) }}" class="btn btn-danger">
                     <span class="badge bg-white text-danger me-2">?</span>
                     Next Unknown
                 </a>
-                <a href="{{ url_for('main.next_pending_review', current_bib=record.bib) }}" class="btn btn-info">
-                    <span class="badge bg-white text-info me-2">⏳</span>
-                    Next Pending Review
-                </a>
             </div>
-            <small class="text-muted d-block mt-2">
-                These buttons will search forward through all records and wrap around to the beginning if needed
+            <small class="text-muted d-block mt-3">
+                <strong>No Votes:</strong> Notes with no votes at all<br>
+                <strong>Pending Review:</strong> Notes that others have voted on but you haven't<br>
+                <strong>Unknown:</strong> Notes with "?" as the consensus classification
             </small>
         </div>
     </div>
