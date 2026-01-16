@@ -35,6 +35,9 @@ python -c "from app import app; app.run(debug=True, port=8080)"
 rm instance/classification.db
 python3 -c "from app import app, db; app.app_context().push(); db.create_all()"
 
+# Migrate existing database to add password support
+python migrate_add_passwords.py
+
 # Import existing XML data
 python migrate_existing_data.py
 ```
@@ -53,7 +56,7 @@ This is a Flask web application for collaborative multi-user voting on note clas
 
 **Database Layer (SQLAlchemy ORM):**
 - `models.py` - Database models and relationships
-  - `User` - User accounts with admin flag
+  - `User` - User accounts with password_hash and admin flag
   - `Record` - Manuscript records with bib_id
   - `Note` - Individual notes within records
   - `Vote` - User votes on note classifications
@@ -63,8 +66,11 @@ This is a Flask web application for collaborative multi-user voting on note clas
 - Cascading deletes for data integrity
 
 **Authentication System:**
-- `auth.py` - Simple username-only authentication
-- No passwords required (trusted team environment)
+- `auth.py` - Password-based authentication
+- Passwords stored as secure hashes using werkzeug.security
+- New users: password set on account creation
+- Existing users: password validated on login
+- Legacy users: can set password on first login after migration
 - Session-based with 7-day persistence
 - Auto-grants admin to username "Admin" (case-insensitive)
 - Decorators: `@login_required`, `@admin_required`
@@ -91,8 +97,10 @@ This is a Flask web application for collaborative multi-user voting on note clas
 
 4. **`routes/admin.py`** - Admin interface (requires `@admin_required`)
    - `/admin/dashboard` - Statistics and top contributors
+   - `/admin/users` - User management (edit usernames, merge accounts)
+   - `/admin/users/<id>/edit` - Edit username or merge with existing user
    - `/admin/upload` - XML import interface
-   - `/admin/export` - XML export with confidence filter
+   - `/admin/export` - XML export with confidence filter and minimum votes
    - `/admin/settings` - Configure contentious threshold and min votes
 
 **Business Logic:**
@@ -112,21 +120,23 @@ This is a Flask web application for collaborative multi-user voting on note clas
 
 - `utils/xml_exporter.py` - XML export functionality
   - Exports records with consensus classifications
-  - Filters by confidence threshold
+  - Filters by confidence threshold AND minimum votes
+  - Excludes records with no qualifying notes
   - Includes vote statistics as attributes
 
 **Frontend:**
 - `templates/` - Jinja2 templates with Bootstrap 5
   - `base.html` - Base template with navigation
-  - `record.html` - Main voting interface
-  - `login.html` - Login page
-  - `admin/` - Admin interface templates
+  - `index.html` - Landing page with classification legend and getting started section
+  - `record.html` - Main voting interface with progress meters
+  - `login.html` - Login page with username and password fields
+  - `admin/` - Admin interface templates (dashboard, users, export, upload, settings)
 - `static/js/app.js` - Client-side JavaScript
   - Vote submission via AJAX
   - Dynamic UI updates for vote distributions
-  - Keyboard navigation (← → arrow keys)
   - Vote visibility toggle
-  - Bulk voting for identical notes
+  - Bulk voting for identical notes (checkbox state preserved)
+  - No keyboard navigation (removed for browser compatibility)
 - `static/css/style.css` - Custom styling
 
 ### Classification System
@@ -142,8 +152,8 @@ The app supports 7 classification types for manuscript notes:
 
 ### Multi-User Voting Flow
 
-1. **User logs in** (username only, no password)
-2. **Navigates to record** with notes needing classification
+1. **User logs in** with username and password
+2. **Navigates to record** with notes needing classification (typically using "Next Unclassified" button)
 3. **Submits vote** by clicking classification button
 4. **AJAX request** sent to `/vote` endpoint with:
    - `bib_id` - Record identifier
@@ -169,8 +179,8 @@ The app supports 7 classification types for manuscript notes:
 
 ### Bulk Voting for Identical Notes
 
-1. **User checks** "Vote on all X identical notes" checkbox
-2. **Submits vote** by clicking classification button
+1. **Checkbox is checked by default** for notes with identical matches
+2. **User submits vote** by clicking classification button
 3. **AJAX request** sent to `/vote-identical` endpoint with:
    - `note_text` - Full text of the note
    - `classification` - Selected classification type
@@ -218,6 +228,7 @@ is_contentious = (total_votes >= 3 and 0.50 < 0.70)  # True
 **Identical Notes Detection:**
 - Badge shows "X identical" count
 - Checkbox allows bulk voting on all identical notes
+- Checkbox is checked by default and state is preserved after voting
 - Finds matches based on exact text comparison
 
 **Translation Integration:**
@@ -237,6 +248,24 @@ is_contentious = (total_votes >= 3 and 0.50 < 0.70)  # True
 - Applied to both new and existing users
 - No manual database updates required
 
+**Progress Tracking:**
+- **Your voting progress**: Shows percentage of notes you've voted on
+- **Overall completion progress**: Shows percentage of notes with at least one vote
+- Real-time updates as votes are submitted
+- Helps users track their contribution and project status
+
+**User Management (Admin):**
+- **Edit usernames**: Rename user accounts
+- **Merge users**: Change username to existing user to merge all votes
+- Automatic vote transfer during merge
+- Useful for combining duplicate accounts or fixing typos
+
+**Smart Navigation:**
+- "Next Unclassified" button replaces generic "Next Record"
+- Automatically finds notes the current user hasn't voted on
+- Wraps around to beginning of records if needed
+- Helps users focus on completing their work
+
 ### Database Schema
 
 ```sql
@@ -244,6 +273,7 @@ is_contentious = (total_votes >= 3 and 0.50 < 0.70)  # True
 CREATE TABLE users (
     id INTEGER PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
+    password_hash VARCHAR(255),
     is_admin BOOLEAN DEFAULT FALSE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -380,16 +410,19 @@ CREATE TABLE settings (
 ### Testing
 
 **Manual Testing Checklist:**
-1. Login as regular user and admin
-2. Vote on notes, verify distribution updates
-3. Change vote, verify update works
-4. Bulk vote on identical notes
-5. Check contentious detection with different thresholds
-6. Import XML file
-7. Export with different confidence thresholds
-8. Test translation button
-9. Navigate with keyboard arrows
-10. Check all filter views
+1. Login as regular user and admin with passwords
+2. Create new user account (password auto-saved)
+3. Vote on notes, verify distribution updates
+4. Change vote, verify update works
+5. Bulk vote on identical notes (checkbox should stay checked)
+6. Verify progress meters update after voting
+7. Check contentious detection with different thresholds
+8. Import XML file
+9. Export with different confidence thresholds and minimum votes
+10. Test translation button
+11. Use "Next Unclassified" navigation
+12. Test user management (rename, merge users)
+13. Check all filter views
 
 **Database Testing:**
 ```python
@@ -408,14 +441,17 @@ with app.app_context():
 ### Security Considerations
 
 **Authentication:**
-- No passwords = low security
-- Suitable for trusted team environments only
-- Consider adding password support for production
+- Passwords stored as secure hashes (pbkdf2:sha256)
+- Passwords never stored in plain text
+- New users set password on first login
+- Legacy users can set password on next login after migration
+- Suitable for team environments with moderate security needs
 
 **Admin Access:**
-- Auto-grant based on username is convenient but insecure
-- Anyone can become admin by using "Admin" username
+- Auto-grant based on username "Admin" (case-insensitive)
+- Anyone can create admin account by using "Admin" username
 - Fine for internal tools, not for public deployment
+- Consider more robust admin system for production
 
 **Input Validation:**
 - Classification types validated server-side
@@ -454,3 +490,9 @@ with app.app_context():
 3. Migration script: `migrate_existing_data.py`
 4. Preserves existing classifications as "Admin" votes
 5. XML import/export maintains compatibility
+
+**Adding password support to existing database:**
+1. Run migration: `python migrate_add_passwords.py`
+2. Adds `password_hash` column to users table
+3. Existing users set password on next login
+4. Safe to run multiple times (checks if column exists)

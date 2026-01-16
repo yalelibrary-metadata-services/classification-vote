@@ -45,8 +45,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             `Vote applied to ${data.total_notes} identical notes! (${data.votes_created} new, ${data.votes_updated} updated)`,
                             'success'
                         );
-                        // Uncheck the checkbox
-                        voteAllCheckbox.checked = false;
                     } else {
                         // Single vote success
                         try {

@@ -232,3 +232,40 @@ def get_identical_note_ids(note_text):
     from models import Note
     notes = Note.query.filter_by(text=note_text).all()
     return [note.id for note in notes]
+
+
+def get_min_votes_for_export():
+    """Get minimum votes required for export (default 1)"""
+    setting = Setting.query.filter_by(key='min_votes_export').first()
+    if setting:
+        try:
+            return int(setting.value)
+        except ValueError:
+            return 1
+    return 1
+
+
+def update_min_votes_for_export(new_min_votes):
+    """
+    Update the minimum votes for export setting.
+
+    Args:
+        new_min_votes: Integer >= 0
+    """
+    from models import db
+
+    if new_min_votes < 0:
+        raise ValueError("Minimum votes must be at least 0")
+
+    setting = Setting.query.filter_by(key='min_votes_export').first()
+    if not setting:
+        setting = Setting(
+            key='min_votes_export',
+            value=str(new_min_votes),
+            description='Minimum number of votes required to include note in export'
+        )
+        db.session.add(setting)
+    else:
+        setting.value = str(new_min_votes)
+
+    db.session.commit()

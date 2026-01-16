@@ -4,12 +4,13 @@ from models import Record, Note
 from utils.probability import calculate_vote_distribution
 
 
-def export_to_xml(confidence_threshold=0.60, include_stats=True):
+def export_to_xml(confidence_threshold=0.60, min_votes=1, include_stats=True):
     """
     Export database to XML with consensus classifications.
 
     Args:
         confidence_threshold: Only include notes with probability >= threshold
+        min_votes: Only include notes with at least this many votes
         include_stats: Add vote_count and consensus_probability attributes
 
     Returns:
@@ -20,24 +21,32 @@ def export_to_xml(confidence_threshold=0.60, include_stats=True):
     records = Record.query.order_by(Record.bib_id).all()
 
     for record in records:
-        record_elem = ET.SubElement(root, 'record')
-        record_elem.set('bib', record.bib_id)
-
-        # Title
-        title_elem = ET.SubElement(record_elem, 'title')
-        title_elem.text = record.title
-
         # Notes
         notes = Note.query.filter_by(record_id=record.id)\
                           .order_by(Note.note_index).all()
 
+        # Collect notes that match criteria
+        matching_notes = []
         for note in notes:
             distribution = calculate_vote_distribution(note.id)
 
-            # Skip notes below confidence threshold
+            # Include notes that meet confidence threshold and minimum votes
             if distribution['consensus'] and \
-               distribution['consensus_probability'] >= confidence_threshold:
+               distribution['consensus_probability'] >= confidence_threshold and \
+               distribution['total'] >= min_votes:
+                matching_notes.append((note, distribution))
 
+        # Only create record element if it has matching notes
+        if matching_notes:
+            record_elem = ET.SubElement(root, 'record')
+            record_elem.set('bib', record.bib_id)
+
+            # Title
+            title_elem = ET.SubElement(record_elem, 'title')
+            title_elem.text = record.title
+
+            # Add matching notes
+            for note, distribution in matching_notes:
                 note_elem = ET.SubElement(record_elem, 'note')
                 note_elem.text = note.text
                 note_elem.set('type', distribution['consensus'])
@@ -55,19 +64,20 @@ def export_to_xml(confidence_threshold=0.60, include_stats=True):
     return pretty_xml
 
 
-def export_to_file(filepath, confidence_threshold=0.60, include_stats=True):
+def export_to_file(filepath, confidence_threshold=0.60, min_votes=1, include_stats=True):
     """
     Export to XML file.
 
     Args:
         filepath: Path to save XML file
         confidence_threshold: Only include notes with probability >= threshold
+        min_votes: Only include notes with at least this many votes
         include_stats: Add vote_count and consensus_probability attributes
 
     Returns:
         filepath
     """
-    xml_content = export_to_xml(confidence_threshold, include_stats)
+    xml_content = export_to_xml(confidence_threshold, min_votes, include_stats)
 
     with open(filepath, 'wb') as f:
         f.write(xml_content)

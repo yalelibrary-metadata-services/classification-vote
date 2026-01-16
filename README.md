@@ -23,21 +23,21 @@ Seven classification types for manuscript notes:
 - **Unknown (?)**: Classification unclear or uncertain
 
 ### User Features
-- **Simple authentication**: Username-only login (no passwords required)
+- **Password authentication**: Secure login with username and password
 - **Vote privacy**: Other users' votes hidden by default, optional to view
-- **Bulk voting**: Vote on all identical notes at once
+- **Bulk voting**: Vote on all identical notes at once (checkbox checked by default)
 - **Translation**: Built-in Google Translate integration for foreign language notes
-- **Progress tracking**: Visual progress meter showing completion percentage
-- **Keyboard navigation**: Use ← → arrow keys to navigate between records
+- **Progress tracking**: Visual progress meters showing your voting progress and overall completion
 - **Quick navigation**: Jump to next unclassified, unknown, or pending review record
+- **Smart navigation**: "Next Unclassified" button automatically finds notes you haven't voted on
 
 ### Admin Features
 Login with username "Admin" (case-insensitive) to access:
 - **Dashboard**: Statistics on votes, users, and classifications
+- **User Management**: Edit usernames and merge duplicate user accounts
 - **XML Import**: Upload XML files to populate the database
-- **XML Export**: Export classifications with configurable confidence threshold
+- **XML Export**: Export classifications with configurable confidence threshold and minimum votes
 - **Settings**: Adjust contentious threshold and minimum vote requirements
-- **User management**: View contributor statistics
 
 ### Filtering and Navigation
 - **Unclassified**: Records with no votes yet
@@ -74,7 +74,13 @@ python app.py
 
 Open your browser to `http://localhost:5000`
 
-### 4. Import Data (Optional)
+### 4. Migrate Existing Database (If Upgrading)
+If you have an existing database and are upgrading to the password-enabled version:
+```bash
+python migrate_add_passwords.py
+```
+
+### 5. Import Data (Optional)
 If you have an existing `data.xml` file:
 ```bash
 # Run the migration script
@@ -99,24 +105,30 @@ Go to **System Preferences → General → AirDrop & Handoff** and turn off "Air
 
 ### For Regular Users
 
-1. **Login**: Enter your username (no password needed)
-2. **Browse records**: Click "Start Classifying" or browse the record list
+1. **Login**: Enter your username and password
+   - New users: Your password will be saved automatically
+   - Existing users: Enter your password to login
+2. **Browse records**: Click "Start with Unclassified" to begin classifying
 3. **Classify notes**:
    - Click the appropriate classification button (W, O, A, OW, AW, AO, or ?)
    - Optionally click "Show Other Votes" to see what others voted
    - Use the translate button (🌐) for foreign language notes
-4. **Bulk voting**: Check "Vote on all X identical notes" to classify all matching notes at once
-5. **Navigate**: Use arrow keys or navigation buttons to move between records
-6. **Quick jump**: Use "Next Unclassified", "Next Unknown", or "Next Pending Review" buttons
+4. **Bulk voting**: The "Vote on all X identical notes" checkbox is checked by default for identical notes
+5. **Navigate**: Use "Next Unclassified" button to move to the next record you haven't voted on
+6. **Track progress**: View your personal voting progress and overall project completion at the top of each record
 
 ### For Administrators
 
-1. **Login** as "Admin" (or "admin", "ADMIN" - case insensitive)
+1. **Login** as "Admin" (or "admin", "ADMIN" - case insensitive) with your password
 2. **Access admin panel**: Click "Admin" in the navigation menu
 3. **View statistics**: See total votes, users, and classification distribution
-4. **Import XML**: Upload data.xml files to populate the database
-5. **Export XML**: Download classifications with custom confidence threshold
-6. **Configure settings**:
+4. **Manage users**: Edit usernames or merge duplicate accounts
+   - Click "Manage Users" in the admin dashboard
+   - Edit usernames to rename or merge accounts
+   - Merging transfers all votes to the target account
+5. **Import XML**: Upload data.xml files to populate the database
+6. **Export XML**: Download classifications with custom confidence threshold and minimum votes
+7. **Configure settings**:
    - Adjust contentious threshold (default 70%)
    - Set minimum votes required for contentious detection (default 3)
 
@@ -131,11 +143,11 @@ Go to **System Preferences → General → AirDrop & Handoff** and turn off "Air
 
 The application uses SQLite with the following tables:
 
-- **users**: User accounts (username, is_admin)
+- **users**: User accounts (username, password_hash, is_admin)
 - **records**: Manuscript records (bib_id, title)
 - **notes**: Individual notes within records (text, note_index)
 - **votes**: User votes on notes (note_id, user_id, classification)
-- **settings**: Configurable system settings (contentious threshold, min votes)
+- **settings**: Configurable system settings (contentious threshold, min votes, export filters)
 
 Database file: `instance/classification.db`
 
@@ -165,7 +177,7 @@ Database file: `instance/classification.db`
 </records>
 ```
 
-Only notes meeting the confidence threshold are exported.
+Only notes meeting both the confidence threshold and minimum vote requirement are exported. Records with no qualifying notes are excluded from the export.
 
 ## Development
 
