@@ -305,3 +305,23 @@ def edit_user(user_id):
             flash(f'Error updating username: {str(e)}', 'danger')
 
     return redirect(url_for('admin.manage_users'))
+
+
+@admin_bp.route('/users/<int:user_id>/reset-password', methods=['POST'])
+@admin_required
+def reset_user_password(user_id):
+    """Reset a user's password to NULL so they can set a new one on next login"""
+
+    user = User.query.get_or_404(user_id)
+    username = user.username
+
+    try:
+        # Set password_hash to NULL
+        user.password_hash = None
+        db.session.commit()
+        flash(f'Password reset for user "{username}". They will be prompted to set a new password on next login.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error resetting password: {str(e)}', 'danger')
+
+    return redirect(url_for('admin.manage_users'))

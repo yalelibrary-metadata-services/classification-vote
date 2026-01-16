@@ -55,6 +55,12 @@
                                             data-bs-target="#editModal{{ user.id }}">
                                         Edit Username
                                     </button>
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-warning ms-1"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#resetPasswordModal{{ user.id }}">
+                                        Reset Password
+                                    </button>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -117,6 +123,39 @@
     {% endfor %}
 {% endif %}
 
+<!-- Reset Password Modals (outside the table) -->
+{% if users %}
+    {% for user in users %}
+    <div class="modal fade" id="resetPasswordModal{{ user.id }}" tabindex="-1" aria-labelledby="resetPasswordModalLabel{{ user.id }}" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="resetPasswordModalLabel{{ user.id }}">Reset Password</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST" action="{{ url_for('admin.reset_user_password', user_id=user.id) }}">
+                    <div class="modal-body">
+                        <p>Are you sure you want to reset the password for <strong>{{ user.username }}</strong>?</p>
+                        <div class="alert alert-info">
+                            <strong>What happens:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>The user's password will be cleared</li>
+                                <li>They will be prompted to set a new password on their next login</li>
+                                <li>They can use any password they choose</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-warning">Reset Password</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% endif %}
+
 <div class="row mt-4">
     <div class="col-md-12">
         <div class="card bg-light">
@@ -125,6 +164,7 @@
                 <ul>
                     <li><strong>Rename a user:</strong> Click "Edit Username" and enter a new unique username</li>
                     <li><strong>Merge users:</strong> Click "Edit Username" and change it to match an existing username. All votes will be transferred to the existing account.</li>
+                    <li><strong>Reset password:</strong> Click "Reset Password" to clear a user's password. They will set a new one on their next login.</li>
                     <li><strong>Admin status:</strong> Users named "Admin" (case-insensitive) automatically receive admin privileges</li>
                 </ul>
             </div>
