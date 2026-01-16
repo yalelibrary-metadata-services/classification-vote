@@ -73,12 +73,33 @@ def record_detail(bib_id):
     prev_record = records[current_index - 1] if current_index and current_index > 0 else None
     next_record = records[current_index + 1] if current_index is not None and current_index < len(records) - 1 else None
 
+    # Calculate user's voting progress
+    total_notes = Note.query.count()
+    user_voted_notes = db.session.query(Note.id)\
+                                  .join(Vote)\
+                                  .filter(Vote.user_id == user_id)\
+                                  .distinct()\
+                                  .count()
+    user_progress = (user_voted_notes / total_notes * 100) if total_notes > 0 else 0
+
+    # Calculate overall completion progress (notes with at least one vote)
+    notes_with_votes = db.session.query(Note.id)\
+                                  .join(Vote)\
+                                  .distinct()\
+                                  .count()
+    overall_progress = (notes_with_votes / total_notes * 100) if total_notes > 0 else 0
+
     return render_template('record.html',
                          record={'bib': record.bib_id, 'title': record.title, 'notes': notes_data},
                          prev_record={'bib': prev_record.bib_id} if prev_record else None,
                          next_record={'bib': next_record.bib_id} if next_record else None,
                          current_index=current_index if current_index is not None else 0,
-                         total_records=len(records))
+                         total_records=len(records),
+                         user_voted_notes=user_voted_notes,
+                         total_notes=total_notes,
+                         user_progress=user_progress,
+                         notes_with_votes=notes_with_votes,
+                         overall_progress=overall_progress)
 
 
 @main_bp.route('/start-unclassified')

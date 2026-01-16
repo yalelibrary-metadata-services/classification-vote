@@ -40,6 +40,25 @@
                     </div>
 
                     <div class="mb-3">
+                        <label for="min_votes" class="form-label">
+                            Minimum Votes Required: <span id="min_votes_display">{{ default_min_votes }}</span>
+                        </label>
+                        <input type="range"
+                               class="form-range"
+                               id="min_votes"
+                               name="min_votes"
+                               min="0"
+                               max="10"
+                               step="1"
+                               value="{{ default_min_votes }}"
+                               oninput="document.getElementById('min_votes_display').textContent = this.value">
+                        <div class="form-text">
+                            Only export notes that have at least this many votes.
+                            Higher values ensure more consensus but may exclude notes with few votes.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
                         <div class="form-check">
                             <input class="form-check-input"
                                    type="checkbox"
@@ -90,7 +109,7 @@
 
                 <h6 class="mt-3">Notes:</h6>
                 <ul class="small">
-                    <li>Notes without votes are never included</li>
+                    <li>Notes are filtered by both confidence threshold and minimum votes</li>
                     <li>Filename includes timestamp</li>
                     <li>Original database is not modified</li>
                     <li>Export can be re-run anytime</li>

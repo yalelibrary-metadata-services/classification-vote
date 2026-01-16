@@ -20,6 +20,52 @@
     </div>
 </div>
 
+<!-- Classification Types Legend -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Classification Types</h5>
+        <div class="row">
+            <div class="col-md-6">
+                <p class="mb-2">
+                    <span class="badge bg-info">W</span> <strong>Work</strong> - Content related to the work itself
+                </p>
+                <p class="mb-2">
+                    <span class="badge bg-warning">O</span> <strong>Object</strong> - Physical description of the manuscript
+                </p>
+                <p class="mb-2">
+                    <span class="badge bg-success">A</span> <strong>Administrative</strong> - Cataloging or processing information
+                </p>
+                <p class="mb-2">
+                    <span class="badge bg-danger">?</span> <strong>Unknown</strong> - Classification unclear or uncertain
+                </p>
+            </div>
+            <div class="col-md-6">
+                <p class="mb-2">
+                    <span class="badge bg-secondary">OW</span> <strong>Object/Work</strong> - Combined physical and content description
+                </p>
+                <p class="mb-2">
+                    <span class="badge bg-dark">AW</span> <strong>Administrative/Work</strong> - Combined administrative and content information
+                </p>
+                <p class="mb-2">
+                    <span class="badge bg-primary">AO</span> <strong>Administrative/Object</strong> - Combined administrative and physical information
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Getting Started Section -->
+<div class="card mb-4 bg-light">
+    <div class="card-body text-center">
+        <h5 class="card-title">Ready to Start Classifying?</h5>
+        <p class="mb-3">Click the button below to jump to the first record with notes that need your vote.</p>
+        <a href="{{ url_for('main.start_unclassified') }}" class="btn btn-warning btn-lg">
+            <span class="badge bg-white text-warning me-2">○</span>
+            Start with Unclassified
+        </a>
+    </div>
+</div>
+
 {% if records %}
 <div class="row">
     {% for record in records %}
