@@ -10,14 +10,15 @@
 PORT=${1:-5000}
 
 echo "Starting Classification Vote application..."
-echo "Server will be available at: http://localhost:$PORT"
+echo "Server will be available at: http://0.0.0.0:$PORT"
+echo "Access from other machines using your server's IP address"
 echo ""
 echo "Press Ctrl+C to stop the server"
 echo ""
 
 # Start gunicorn with:
 # - 4 worker processes for handling concurrent requests
-# - Bind to localhost on specified port
+# - Bind to 0.0.0.0 (all network interfaces) on specified port
 # - Access logs to stdout
 # - Error logs to stderr
 # - Worker timeout of 120 seconds for long-running requests
@@ -25,7 +26,7 @@ echo ""
 
 gunicorn \
     --workers 4 \
-    --bind "127.0.0.1:$PORT" \
+    --bind "0.0.0.0:$PORT" \
     --access-logfile - \
     --error-logfile - \
     --timeout 120 \

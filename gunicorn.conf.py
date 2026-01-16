@@ -7,7 +7,7 @@ This file can be used with: gunicorn -c gunicorn.conf.py wsgi:app
 import multiprocessing
 
 # Server Socket
-bind = "127.0.0.1:5000"
+bind = "0.0.0.0:5000"  # Bind to all network interfaces (accessible from other machines)
 backlog = 2048
 
 # Worker Processes

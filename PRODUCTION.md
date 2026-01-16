@@ -20,7 +20,31 @@ pip install -r requirements.txt
 ./start_production.sh 8080
 ```
 
-The server will be available at `http://localhost:5000` (or your chosen port).
+The server will be available at:
+- **Local access**: `http://localhost:5000`
+- **Network access**: `http://YOUR_SERVER_IP:5000` (e.g., `http://192.168.1.100:5000`)
+
+The server binds to `0.0.0.0` (all network interfaces), making it accessible from other machines on your network.
+
+**Security Note**: When binding to `0.0.0.0`, ensure your firewall is properly configured and only trusted users have network access. For public deployments, use nginx with SSL/TLS.
+
+### Finding Your Server IP Address
+
+To find your server's IP address for network access:
+
+```bash
+# macOS/Linux
+ifconfig | grep "inet " | grep -v 127.0.0.1
+
+# Or on macOS
+ipconfig getifaddr en0  # Usually WiFi
+ipconfig getifaddr en1  # Usually Ethernet
+
+# Linux
+hostname -I
+```
+
+Share this IP address with users who need to access the application from other machines.
 
 ## Production Configuration
 
